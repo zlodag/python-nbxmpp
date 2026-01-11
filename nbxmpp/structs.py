@@ -377,8 +377,8 @@ class RosterData(NamedTuple):
 
 
 class RosterPush(NamedTuple):
-    item: RosterItem
-    version: str
+    items: list[RosterItem]
+    version: str | None
 
 
 class ServerAddress(NamedTuple):

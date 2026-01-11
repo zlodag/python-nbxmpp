@@ -481,7 +481,7 @@ class Client(Observable):
             self._current_address,
             self._accepted_certificates,
             self._ignore_tls_errors,
-            self._ignored_tls_errors,
+            self._ignored_tls_errors | {Gio.TlsCertificateFlags.BAD_IDENTITY},
             self.client_cert,
         )
 

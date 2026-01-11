@@ -80,18 +80,11 @@ class Roster(BaseModule):
 
         ver_support = self._client.features.has_roster_version()
         pushed_items, version = self._parse_push(stanza, ver_support)
-        if len(pushed_items) != 1:
-            self._log.warning(
-                "Roster push does not have exactly one item: %s", pushed_items
-            )
-            self._log.warning(stanza)
-            raise NodeProcessed
+        properties.roster = RosterPush(pushed_items, version)
 
-        item = pushed_items[0]
-        properties.roster = RosterPush(item, version)
-
-        self._log.info("Roster Push, version: %s", properties.roster.version)
-        self._log.info(item)
+        self._log.info("Roster Push, items: %d, version: %s", len(properties.roster.items), properties.roster.version)
+        for item in properties.roster.items:
+            self._log.info(item)
 
         self._ack_roster_push(stanza)
 
