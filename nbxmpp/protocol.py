@@ -13,7 +13,6 @@ from __future__ import annotations
 from typing import Any
 from typing import Literal
 from typing import TYPE_CHECKING
-
 import functools
 import hashlib
 import os
@@ -25,7 +24,7 @@ from collections.abc import Iterable
 from dataclasses import asdict
 from dataclasses import dataclass
 from dataclasses import fields
-
+import re
 import idna
 from gi.repository import Gio
 from gi.repository import GLib
@@ -714,6 +713,11 @@ def unescape_localpart(localpart: str) -> str:
 
     return localpart
 
+def generate_pacs(localpart: str):
+    return re.sub(r'\|([a-z])', lambda m: m.group(1).upper(), localpart)
+
+def generate_localpart(pacs: str):
+    return re.sub(r'([A-Z])', lambda m: '|' + m.group(1).lower(), pacs)
 
 @dataclass(frozen=True, kw_only=True)
 class JID:
@@ -729,6 +733,7 @@ class JID:
     ):
 
         if localpart is not None:
+            localpart = generate_localpart(localpart)
             localpart = validate_localpart(localpart)
         object.__setattr__(self, "localpart", localpart)
 
@@ -738,6 +743,7 @@ class JID:
         if resource is not None:
             resource = validate_resourcepart(resource)
         object.__setattr__(self, "resource", resource)
+
 
     @classmethod
     @functools.cache
@@ -810,9 +816,11 @@ class JID:
         except Exception as error:
             raise InvalidJid('Unable to parse "%s"' % iri_str) from error
 
+
+
     def __str__(self) -> str:
         if self.localpart:
-            jid = f"{self.localpart}@{self.domain}"
+            jid = f"{generate_pacs(self.localpart)}@{self.domain}"
         else:
             jid = self.domain
 
@@ -853,7 +861,7 @@ class JID:
     @property
     def bare(self) -> str:
         if self.localpart is not None:
-            return f"{self.localpart}@{self.domain}"
+            return f"{generate_pacs(self.localpart)}@{self.domain}"
         return self.domain
 
     @property
@@ -893,7 +901,7 @@ class JID:
         if self.localpart is None:
             return f"{self}{domain_encoded}"
 
-        localpart = unescape_localpart(self.localpart)
+        localpart = unescape_localpart(generate_pacs(self.localpart))
 
         if self.resource is None:
             return f"{localpart}@{self.domain}{domain_encoded}"
@@ -906,7 +914,7 @@ class JID:
     ) -> str:
 
         if self.localpart:
-            inode = escape_inode(self.localpart)
+            inode = escape_inode(generate_pacs(self.localpart))
             ipathxmpp = f"{inode}@{self.domain}"
         else:
             ipathxmpp = f"{self.domain}"

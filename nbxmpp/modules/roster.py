@@ -86,7 +86,7 @@ class Roster(BaseModule):
         for item in properties.roster.items:
             self._log.info(item)
 
-        self._ack_roster_push(stanza)
+        # self._ack_roster_push(stanza)
 
     def _ack_roster_push(self, stanza: Iq) -> None:
         iq = Iq(
@@ -123,7 +123,7 @@ class Roster(BaseModule):
                 # raise MalformedStanzaError('ver attribute missing', stanza)
                 # Prosody sometimes does not send ver attribute with some
                 # community modules
-                self._log.warning("no version attribute found")
+                self._log.info("no version attribute found")
 
         pushed_items: list[RosterItem] = []
         for item in query.getTags("item"):
