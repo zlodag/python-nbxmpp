@@ -140,6 +140,7 @@ class _Namespaces:
     REPLY: str = "urn:xmpp:reply:0"
     REPORTING: str = "urn:xmpp:reporting:0"
     ROSTER: str = "jabber:iq:roster"
+    ROSTER_DYNAMIC_UPDATE: str = "intelerad:roster-dynamic:update"
     ROSTERNOTES: str = "storage:rosternotes"
     ROSTERX: str = "http://jabber.org/protocol/rosterx"
     ROSTER_VER: str = "urn:xmpp:features:rosterver"

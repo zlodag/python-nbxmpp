@@ -17,8 +17,7 @@ from nbxmpp.protocol import Iq
 from nbxmpp.protocol import JID
 from nbxmpp.protocol import NodeProcessed
 from nbxmpp.simplexml import Node
-from nbxmpp.structs import IqProperties
-from nbxmpp.structs import RosterData
+from nbxmpp.structs import IqProperties, RosterData, RosterDynamic
 from nbxmpp.structs import RosterItem
 from nbxmpp.structs import RosterPush
 from nbxmpp.structs import StanzaHandler
@@ -41,7 +40,35 @@ class Roster(BaseModule):
                 priority=15,
                 ns=Namespace.ROSTER,
             ),
+            StanzaHandler(
+                name="iq",
+                callback=self._process_roster_dynamic_update,
+                typ="set",
+                priority=15,
+                ns=Namespace.ROSTER_DYNAMIC_UPDATE,
+            ),
         ]
+
+    def _process_roster_dynamic_update(
+        self, _client: Client, stanza: Iq, properties: IqProperties
+    ) -> None:
+        self._log.warning("Got _process_roster_dynamic_update: %s", stanza)
+        query = stanza.getTag(
+            "query", namespace=Namespace.ROSTER_DYNAMIC_UPDATE)
+        roster_updates: list[RosterDynamic] = []
+        for item in query.getTags("item") if query is not None else []:
+            try:
+                roster_update = RosterDynamic.from_node(item)
+            except Exception as e:
+                self._log.warning("Invalid roster item: %s", e)
+                self._log.warning(stanza)
+                continue
+
+            roster_updates.append(roster_update)
+        properties.roster_update = roster_updates
+
+        for update in properties.roster_update:
+            self._log.info("Roster Update: %s",  update)
 
     @iq_request_task
     def request_roster(self, version: str | None = None):
@@ -82,7 +109,8 @@ class Roster(BaseModule):
         pushed_items, version = self._parse_push(stanza, ver_support)
         properties.roster = RosterPush(pushed_items, version)
 
-        self._log.info("Roster Push, items: %d, version: %s", len(properties.roster.items), properties.roster.version)
+        self._log.info("Roster Push, items: %d, version: %s", len(
+            properties.roster.items), properties.roster.version)
         for item in properties.roster.items:
             self._log.info(item)
 

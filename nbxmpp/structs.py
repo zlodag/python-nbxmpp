@@ -407,6 +407,32 @@ class ServerAddress(NamedTuple):
 
 
 @dataclass
+class RosterDynamic:
+    jid: JID
+    session_phone: str | None = None
+    session_physical_location: str | None = None
+
+    @classmethod
+    def from_node(cls, node: Node) -> RosterDynamic:
+        attrs = node.getAttrs(copy=True)
+        jid = attrs.get("jid")
+        if jid is None:
+            raise Exception("jid attribute missing")
+
+        jid = JID.from_string(jid)
+        if jid.is_full:
+            raise Exception("full jid in roster not allowed")
+
+        return cls(
+            jid=jid,
+            session_phone=n.getData() if (n := node.getTag(
+                "session-phone")) is not None else None,
+            session_physical_location=n.getData() if (n := node.getTag(
+                "session-physical-location")) is not None else None,
+        )
+
+
+@dataclass
 class RosterItem:
     jid: JID
     name: str | None = None
@@ -414,6 +440,8 @@ class RosterItem:
     subscription: str | None = None
     approved: str | None = None
     groups: set[str] = field(default_factory=set)
+    session_phone: str | None = None
+    session_physical_location: str | None = None
 
     @classmethod
     def from_node(cls, node: Node) -> RosterItem:
@@ -740,7 +768,8 @@ class DiscoInfo(NamedTuple):
 
     @property
     def reactions_allowlist(self) -> list[str] | None:
-        value = self.get_field_value(Namespace.REACTIONS_RESTRICTIONS, "allowlist")
+        value = self.get_field_value(
+            Namespace.REACTIONS_RESTRICTIONS, "allowlist")
         return value
 
 
@@ -872,7 +901,8 @@ class CommonError:
             except Exception:
                 pass
 
-        text_elements = self._error_node.getTags("text", namespace=Namespace.STANZAS)
+        text_elements = self._error_node.getTags(
+            "text", namespace=Namespace.STANZAS)
         for element in text_elements:
             lang = element.getXmlLang()
             text = element.getData()
@@ -952,7 +982,8 @@ class StreamError(CommonError):
         self.id = stanza.getID()
         self._text: dict[str, str] = {}
 
-        text_elements = self._error_node.getTags("text", namespace=Namespace.STREAMS)
+        text_elements = self._error_node.getTags(
+            "text", namespace=Namespace.STREAMS)
         for element in text_elements:
             lang = element.getXmlLang()
             text = element.getData()
@@ -1294,6 +1325,7 @@ class IqProperties:
     ibb: IBBData | None = None
     blocking: BlockingPush | None = None
     roster: RosterPush | None = None
+    roster_update: list[RosterDynamic] | None = None
 
     @property
     def is_http_auth(self) -> bool:
